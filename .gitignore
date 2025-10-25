@@ -6,3 +6,5 @@
 .vscode/
 .trae/
 .idea/
+web/node_modules
+web/dist

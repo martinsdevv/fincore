@@ -1,0 +1,25 @@
+# Configuração do Air (colocar em api/.air.toml)
+
+# Diretório raiz do projeto (onde o air vai rodar)
+root = "."
+
+[build]
+# Comando para construir o binário.
+# Aponta para o seu main.go dentro de cmd/server
+cmd = "go build -o ./tmp/main.exe ./cmd/server/main.go"
+
+# Caminho do binário que o air deve executar
+# No Windows, precisamos apontar explicitamente para .exe
+bin = "./tmp/main.exe"
+
+[watch]
+# Pastas para assistir (o padrão é bom, mas isso garante)
+include_dir = ["cmd", "internal", "pkg"]
+# Arquivos para assistir
+include_ext = ["go", "tpl", "tmpl", "html"]
+# Pastas para ignorar
+exclude_dir = ["tmp"]
+
+[misc]
+# Limpa a tela a cada build
+clean_on_exit = true
