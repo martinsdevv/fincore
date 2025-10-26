@@ -19,6 +19,18 @@ func LoadConfig() (*Config, error) {
 	v := viper.New()
 	v.AutomaticEnv()
 
+	// Também tenta ler arquivo .env nas pastas comuns
+	v.SetConfigName(".env")
+	v.SetConfigType("env")
+	v.AddConfigPath(".")
+	v.AddConfigPath("..")
+	v.AddConfigPath("../..")
+	if err := v.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return nil, err
+		}
+	}
+
 	// Garante que as variáveis de ambiente sejam consideradas no Unmarshal
 	for _, k := range []string{
 		"API_PORT",
@@ -30,7 +42,9 @@ func LoadConfig() (*Config, error) {
 		"DB_NAME",
 		"REDIS_ADDR",
 	} {
-		_ = v.BindEnv(k)
+		if err := v.BindEnv(k); err != nil {
+			return nil, err
+		}
 	}
 
 	v.SetDefault("API_PORT", "8080")

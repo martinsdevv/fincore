@@ -24,7 +24,10 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	// TODO: 3. Chamar h.service.Register
 	// TODO: 4. Escrever resposta JSON (sucesso ou erro)
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(`{"message": "register endpoint"}`))
+	if _, err := w.Write([]byte(`{"message": "register endpoint"}`)); err != nil {
+		http.Error(w, "write error", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -33,5 +36,8 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	// TODO: 3. Chamar h.service.Login
 	// TODO: 4. Escrever resposta JSON
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "login endpoint"}`))
+	if _, err := w.Write([]byte(`{"message": "login endpoint"}`)); err != nil {
+		http.Error(w, "write error", http.StatusInternalServerError)
+		return
+	}
 }
