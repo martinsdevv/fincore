@@ -43,7 +43,10 @@ func TestMain(m *testing.M) {
 	}
 
 	// Forçar o uso do banco de dados de teste (garantia)
-	cfg.DBName = os.Getenv("DB_NAME")
+	// (Garantia de que o config.LoadConfig() pegou as vars de ambiente do CI)
+	if os.Getenv("DB_NAME") != "" {
+		cfg.DBName = os.Getenv("DB_NAME")
+	}
 
 	// 2. Conectar ao Banco de Teste
 	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
@@ -55,8 +58,8 @@ func TestMain(m *testing.M) {
 	}
 	defer testPool.Close()
 
-	// Garantir que a tabela exista (copiado do repo_test)
-	createUsersTable(testPool)
+	// A tabela agora é criada pelo 'migrate' no CI.
+	// A chamada para createUsersTable() foi removida daqui.
 
 	// 3. Montar a Aplicação Real
 	repo := auth.NewRepository(testPool)
@@ -157,24 +160,9 @@ func TestAuthIntegration_RegisterAndLogin(t *testing.T) {
 	// TODO: Adicionar teste para login com senha errada (deve retornar 401 ou 500)
 }
 
-// --- Funções Auxiliares (copiadas de auth_repository_test.go) ---
+// --- Funções Auxiliares ---
 
-func createUsersTable(pool *pgxpool.Pool) {
-	query := `
-    CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY,
-        first_name TEXT NOT NULL,
-        last_name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-    );`
-	_, err := pool.Exec(testCtx, query)
-	if err != nil {
-		log.Fatalf("Não foi possível criar tabela 'users': %v", err)
-	}
-}
+// A função createUsersTable() foi removida.
 
 func truncateUsersTable(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()

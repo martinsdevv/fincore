@@ -20,14 +20,12 @@ var (
 // TestMain é uma função especial que roda ANTES de todos os testes neste pacote.
 // Vamos usá-la para configurar o banco de dados.
 func TestMain(m *testing.M) {
-	// --- 2. ADICIONE ISSO AQUI ---
 	// Carrega o .env da pasta raiz (estamos em /api, então subimos um nível)
 	err := godotenv.Load("../../../.env")
 	if err != nil {
 		log.Printf("Aviso: Não foi possível carregar o arquivo .env: %v", err)
 		log.Println("Tentando continuar com as variáveis de ambiente existentes (ex: CI)...")
 	}
-	// -----------------------------
 
 	// Ler variáveis de ambiente (agora elas devem existir!)
 	dbHost := os.Getenv("DB_HOST")
@@ -46,39 +44,21 @@ func TestMain(m *testing.M) {
 	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		dbUser, dbPassword, dbHost, dbPort, dbName)
 
-	// var err error <-- (err já foi declarado acima)
 	testPool, err = pgxpool.New(testCtx, connString)
 	if err != nil {
 		log.Fatalf("Não foi possível conectar ao banco de dados de teste: %v\n", err)
 	}
 	defer testPool.Close()
 
-	err = createUsersTable(testPool)
-	if err != nil {
-		log.Fatalf("Não foi possível criar a tabela 'users': %v\n", err)
-	}
+	// A tabela agora é criada pelo 'migrate' no CI.
+	// A chamada para createUsersTable() foi removida daqui.
 
 	code := m.Run()
 
 	os.Exit(code)
 }
 
-func createUsersTable(pool *pgxpool.Pool) error {
-	// (Usamos 'TEXT' para o hash da senha)
-	// (Adicionamos 'UNIQUE' para o email, para testar conflitos)
-	query := `
-    CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY,
-        first_name TEXT NOT NULL,
-        last_name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-    );`
-	_, err := pool.Exec(testCtx, query)
-	return err
-}
+// A função createUsersTable() foi removida.
 
 // Helper para limpar a tabela antes de cada teste
 func truncateUsersTable(t *testing.T, pool *pgxpool.Pool) {
