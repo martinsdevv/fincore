@@ -3,6 +3,8 @@ package auth
 import (
 	"net/http"
 
+	"encoding/json"
+
 	"github.com/go-playground/validator/v10"
 )
 
@@ -19,25 +21,59 @@ func NewHandler(service Service) *Handler {
 }
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
-	// TODO: 1. Decodificar JSON
-	// TODO: 2. Validar struct (h.validate)
-	// TODO: 3. Chamar h.service.Register
-	// TODO: 4. Escrever resposta JSON (sucesso ou erro)
-	w.WriteHeader(http.StatusCreated)
-	if _, err := w.Write([]byte(`{"message": "register endpoint"}`)); err != nil {
-		http.Error(w, "write error", http.StatusInternalServerError)
+	var req RegisterRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid request body"})
 		return
 	}
+
+	if err := h.validate.Struct(req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "validation failed: " + err.Error()})
+		return
+	}
+
+	if err := h.service.Register(r.Context(), req); err != nil {
+		// TODO: Mapear erros do serviço (ex: email duplicado -> 409 Conflict)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "failed to register user"})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "user registered successfully"})
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
-	// TODO: 1. Decodificar JSON
-	// TODO: 2. Validar struct
-	// TODO: 3. Chamar h.service.Login
-	// TODO: 4. Escrever resposta JSON
-	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write([]byte(`{"message": "login endpoint"}`)); err != nil {
-		http.Error(w, "write error", http.StatusInternalServerError)
+	var req LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid request body"})
 		return
 	}
+
+	if err := h.validate.Struct(req); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "validation failed: " + err.Error()})
+		return
+	}
+
+	resp, err := h.service.Login(r.Context(), req)
+	if err != nil {
+		// TODO: Mapear erros do serviço (ex: credenciais erradas -> 401 Unauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError) // Provisório
+		json.NewEncoder(w).Encode(map[string]string{"error": "login failed"})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
 }
