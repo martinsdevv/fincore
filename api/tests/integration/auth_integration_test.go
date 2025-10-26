@@ -32,7 +32,8 @@ func TestMain(m *testing.M) {
 	// 1. Carregar Config
 	// (Estamos em /api/tests/integration, subimos 3 níveis)
 	if err := godotenv.Load("../../../.env"); err != nil {
-		log.Fatalf("Erro ao carregar .env para teste de integração: %v", err)
+		log.Printf("Aviso: Não foi possível carregar o .env para teste de integração: %v", err)
+		log.Println("Tentando continuar com as variáveis de ambiente do CI...")
 	}
 
 	// Usamos o config.LoadConfig() real, mas as vars vêm do .env que carregamos
