@@ -57,7 +57,10 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "ok", "db": "connected", "cache": "connected"}`))
+		_, err := w.Write([]byte(`{"status": "ok", "db": "connected", "cache": "connected"}`))
+		if err != nil {
+			log.Error().Err(err).Msg("Erro ao escrever resposta do health check")
+		}
 	})
 
 	serverAddr := fmt.Sprintf(":%s", cfg.APIPort)

@@ -36,14 +36,14 @@ func LoadConfig() (*Config, error) {
 		}
 	}
 
-	viper.BindEnv("API_PORT")
-	viper.BindEnv("JWT_SECRET")
-	viper.BindEnv("DB_HOST")
-	viper.BindEnv("DB_PORT")
-	viper.BindEnv("DB_USER")
-	viper.BindEnv("DB_PASSWORD")
-	viper.BindEnv("DB_NAME")
-	viper.BindEnv("REDIS_ADDR")
+	// viper.BindEnv("API_PORT")
+	// viper.BindEnv("JWT_SECRET")
+	// viper.BindEnv("DB_HOST")
+	// viper.BindEnv("DB_PORT")
+	// viper.BindEnv("DB_USER")
+	// viper.BindEnv("DB_PASSWORD")
+	// viper.BindEnv("DB_NAME")
+	// viper.BindEnv("REDIS_ADDR")
 
 	viper.SetDefault("DB_PORT", "5432")
 
