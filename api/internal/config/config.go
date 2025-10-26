@@ -1,14 +1,8 @@
 package config
 
 import (
-	"fmt"
-
 	"github.com/spf13/viper"
 )
-
-// Config armazena todas as configurações da aplicação.
-// As tags 'mapstructure' dizem ao viper qual variável de ambiente
-// corresponde a qual campo da struct.
 
 type Config struct {
 	APIPort    string `mapstructure:"API_PORT"`
@@ -22,40 +16,43 @@ type Config struct {
 }
 
 func LoadConfig() (*Config, error) {
-	var cfg Config
+	v := viper.New()
+	v.AutomaticEnv()
 
-	viper.SetConfigName(".env")
-	viper.SetConfigType("env")
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("..")
-	viper.AddConfigPath("../..")
-
-	if err := viper.ReadInConfig(); err != nil {
+	// Também tenta ler arquivo .env nas pastas comuns
+	v.SetConfigName(".env")
+	v.SetConfigType("env")
+	v.AddConfigPath(".")
+	v.AddConfigPath("..")
+	v.AddConfigPath("../..")
+	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("erro ao ler .env: %w", err)
+			return nil, err
 		}
 	}
 
-	// viper.BindEnv("API_PORT")
-	// viper.BindEnv("JWT_SECRET")
-	// viper.BindEnv("DB_HOST")
-	// viper.BindEnv("DB_PORT")
-	// viper.BindEnv("DB_USER")
-	// viper.BindEnv("DB_PASSWORD")
-	// viper.BindEnv("DB_NAME")
-	// viper.BindEnv("REDIS_ADDR")
-
-	viper.SetDefault("DB_PORT", "5432")
-
-	viper.AutomaticEnv()
-
-	if err := viper.Unmarshal(&cfg); err != nil {
-		return nil, err
+	// Garante que as variáveis de ambiente sejam consideradas no Unmarshal
+	for _, k := range []string{
+		"API_PORT",
+		"JWT_SECRET",
+		"DB_HOST",
+		"DB_PORT",
+		"DB_USER",
+		"DB_PASSWORD",
+		"DB_NAME",
+		"REDIS_ADDR",
+	} {
+		if err := v.BindEnv(k); err != nil {
+			return nil, err
+		}
 	}
 
-	// Validação mínima para evitar conexões com credenciais vazias
-	if cfg.DBUser == "" || cfg.DBName == "" {
-		return nil, fmt.Errorf("variáveis de DB ausentes: verifique DB_USER e DB_NAME no .env ou ambiente")
+	v.SetDefault("API_PORT", "8080")
+	v.SetDefault("DB_PORT", "5432")
+
+	var cfg Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, err
 	}
 
 	return &cfg, nil

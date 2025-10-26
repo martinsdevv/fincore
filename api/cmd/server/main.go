@@ -11,10 +11,15 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/martinsdevv/fincore/internal/auth"
 	"github.com/martinsdevv/fincore/internal/config"
 	"github.com/martinsdevv/fincore/pkg/database"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5" // <-- 1. ADICIONE O '_' AQUI
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func main() {
@@ -25,6 +30,12 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Não foi possível carregar as configurações")
 	}
+
+	if err := runMigrations(cfg); err != nil {
+		log.Fatal().Err(err).Msg("Falha ao rodar migrações")
+	}
+	log.Info().Msg("Migrações do banco de dados aplicadas com sucesso.")
+
 	if err := database.ConnectDB(cfg); err != nil {
 		log.Fatal().Err(err).Msg("Não foi possível conectar ao banco")
 	}
@@ -36,11 +47,11 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Use(middleware.RequestID)                 // Adiciona um ID a cada requisição
-	r.Use(middleware.RealIP)                    // Pega o IP real (atrás de proxies)
-	r.Use(middleware.Recoverer)                 // Recupera de panics
-	r.Use(middleware.Logger)                    // Log das requisições HTTP
-	r.Use(middleware.Timeout(60 * time.Second)) // Timeout global
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		if err := database.DB.Ping(context.Background()); err != nil {
@@ -62,6 +73,11 @@ func main() {
 			log.Error().Err(err).Msg("Erro ao escrever resposta do health check")
 		}
 	})
+
+	authRepo := auth.NewRepository(database.DB)
+	authSvc := auth.NewService(authRepo, cfg.JWTSecret)
+	authHandler := auth.NewHandler(authSvc)
+	authHandler.RegisterRoutes(r)
 
 	serverAddr := fmt.Sprintf(":%s", cfg.APIPort)
 	server := &http.Server{Addr: serverAddr, Handler: r}
@@ -88,4 +104,30 @@ func main() {
 	}
 
 	log.Info().Msg("Servidor desligado com sucesso.")
+}
+
+func runMigrations(cfg *config.Config) error {
+	// 2. MUDE 'postgresql://' PARA 'pgx5://' AQUI
+	dsn := fmt.Sprintf("pgx5://%s:%s@%s:%s/%s?sslmode=disable",
+		cfg.DBUser,
+		cfg.DBPassword,
+		cfg.DBHost,
+		cfg.DBPort,
+		cfg.DBName,
+	)
+
+	m, err := migrate.New("file://./migrations", dsn)
+	if err != nil {
+		return fmt.Errorf("falha ao instanciar migrate: %w", err)
+	}
+
+	if err := m.Up(); err != nil {
+		if err == migrate.ErrNoChange {
+			log.Info().Msg("Nenhuma nova migração para aplicar.")
+			return nil
+		}
+		return fmt.Errorf("falha ao aplicar migrações 'up': %w", err)
+	}
+
+	return nil
 }
