@@ -74,7 +74,7 @@ jobs:
 
       - name: Instalar Migrate CLI
         run: |
-          go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+          go install -tags 'pgx5' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
         working-directory: ${{ env.WORK_DIR }}
 
@@ -83,7 +83,7 @@ jobs:
           echo "Rodando migrações em $DB_HOST..."
           migrate -source "file://./migrations" -database "pgx5://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME?sslmode=disable" up
         working-directory: ${{ env.WORK_DIR }}
-        
+
       - name: Run Linter
         run: |
           go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
