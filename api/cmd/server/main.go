@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/martinsdevv/fincore/internal/auth"
 	"github.com/martinsdevv/fincore/internal/config"
 	"github.com/martinsdevv/fincore/pkg/database"
 	"github.com/rs/zerolog"
@@ -62,6 +63,11 @@ func main() {
 			log.Error().Err(err).Msg("Erro ao escrever resposta do health check")
 		}
 	})
+
+	authRepo := auth.NewRepository(database.DB)
+	authSvc := auth.NewService(authRepo, cfg.JWTSecret)
+	authHandler := auth.NewHandler(authSvc)
+	authHandler.RegisterRoutes(r)
 
 	serverAddr := fmt.Sprintf(":%s", cfg.APIPort)
 	server := &http.Server{Addr: serverAddr, Handler: r}
