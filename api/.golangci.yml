@@ -34,7 +34,6 @@ linters:
     - unconvert            
     - whitespace           
     - goconst
-    - shadow
 
 issues:
   exclude-files:
