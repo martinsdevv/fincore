@@ -1,0 +1,60 @@
+run:
+  timeout: 5m
+
+  # Diretório de trabalho para o linter (importante para monorepo)
+  # Como estamos colocando este arquivo dentro de 'api/', 
+  # não precisamos definir um 'working-directory' aqui,
+  # mas se estivesse na raiz, usariamos:
+  # working-directory: api/
+
+  skip-files:
+    - ".*_mock.go"
+    - ".*_test.go"
+
+  allow-new-linters: true
+
+output:
+  format: colored-line-number
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+
+  goimports:
+    local-prefixes: github.com/martinsdevv/fincore/api
+
+  govet:
+    check-shadowing: true
+
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+linters:
+  disable-all: true
+  
+  enable:
+    - govet                # Análises de código suspeito (ex: printf args)
+    - goimports            # Formata e agrupa imports
+    - errcheck             # Verifica se os erros estão sendo tratados
+    - staticcheck          # Conjunto poderoso de análises estáticas
+    - unused               # Encontra código não utilizado
+    - gocyclo              # Verifica complexidade de funções
+    - ineffassign          # Encontra atribuições de variáveis inúteis
+    - typecheck            # Erros de tipo
+    - gosimple             # Sugere simplificações no código
+    - structcheck          # Encontra campos de struct não utilizados
+    - varcheck             # Encontra variáveis não utilizadas
+    - bodyclose            # Verifica se http.Response.Body está sendo fechado
+    - unconvert            # Remove conversões de tipo desnecessárias
+    - whitespace           # Verifica problemas de espaçamento
+    - goconst              # Encontra strings que poderiam ser constantes
+
+issues:
+  # Define o número máximo de problemas do mesmo tipo. 0 = sem limite.
+  max-same-issues: 0
+
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - goconst
