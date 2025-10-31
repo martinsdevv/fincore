@@ -1,0 +1,12 @@
+<div class="dashboard-container">
+  <div *ngIf="user; else loading">
+    <h2>Bem-vindo, {{ user.name }}!</h2>
+    <p>Email: {{ user.email }}</p>
+    <pre>{{ user | json }}</pre> <button (click)="logout()">Sair</button>
+  </div>
+
+  <ng-template #loading>
+    <p *ngIf="!errorMessage">Carregando dados do perfil...</p>
+    <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
+  </ng-template>
+</div>
