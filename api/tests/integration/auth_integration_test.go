@@ -64,7 +64,7 @@ func TestMain(m *testing.M) {
 	// 3. Montar a Aplicação Real
 	repo := auth.NewRepository(testPool)
 	service := auth.NewService(repo, cfg.JWTSecret)
-	handler := auth.NewHandler(service)
+	handler := auth.NewHandler(service, cfg.JWTSecret)
 
 	// 4. Configurar o Roteador Real
 	r := chi.NewMux()

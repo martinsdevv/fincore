@@ -1,17 +1,25 @@
 package auth
 
 import (
-	"net/http"
-
+	"context"
 	"encoding/json"
+	"errors"
+	"net/http"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/rs/zerolog/log"
 )
 
+type contextKey string
+
+const UserContextKey = contextKey("userID")
+
 type Handler struct {
-	service  Service
-	validate *validator.Validate
+	service   Service
+	validate  *validator.Validate
+	jwtSecret string
 }
 
 func (h *Handler) writeJSON(w http.ResponseWriter, status int, v interface{}) {
@@ -23,10 +31,11 @@ func (h *Handler) writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	}
 }
 
-func NewHandler(service Service) *Handler {
+func NewHandler(service Service, jwtSecret string) *Handler {
 	return &Handler{
-		service:  service,
-		validate: validator.New(validator.WithRequiredStructEnabled()),
+		service:   service,
+		validate:  validator.New(validator.WithRequiredStructEnabled()),
+		jwtSecret: jwtSecret,
 	}
 }
 
@@ -71,4 +80,50 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			h.writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "missing authorization header"})
+			return
+		}
+
+		headerParts := strings.Split(authHeader, " ")
+		if len(headerParts) != 2 || headerParts[0] != "Bearer" {
+			h.writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid authorization header format"})
+			return
+		}
+		tokenString := headerParts[1]
+
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, errors.New("unexpected signing method")
+			}
+			return []byte(h.jwtSecret), nil
+		})
+
+		if err != nil || !token.Valid {
+			log.Warn().Err(err).Msg("Invalid token attempt")
+			h.writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid or expired token"})
+			return
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			h.writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid token claims"})
+			return
+		}
+
+		userID, ok := claims["sub"].(string)
+		if !ok {
+			h.writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid user ID in token"})
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), UserContextKey, userID)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }

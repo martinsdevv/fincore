@@ -76,7 +76,7 @@ func main() {
 
 	authRepo := auth.NewRepository(database.DB)
 	authSvc := auth.NewService(authRepo, cfg.JWTSecret)
-	authHandler := auth.NewHandler(authSvc)
+	authHandler := auth.NewHandler(authSvc, cfg.JWTSecret)
 	authHandler.RegisterRoutes(r)
 
 	serverAddr := fmt.Sprintf(":%s", cfg.APIPort)
