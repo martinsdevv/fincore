@@ -14,6 +14,7 @@ import (
 type MockRepository struct {
 	CreateUserFunc     func(ctx context.Context, user *User) error
 	GetUserByEmailFunc func(ctx context.Context, email string) (*User, error)
+	GetUserByIDFunc    func(ctx context.Context, id uuid.UUID) (*User, error)
 }
 
 func (m *MockRepository) CreateUser(ctx context.Context, user *User) error {
@@ -30,6 +31,13 @@ func (m *MockRepository) GetUserByEmail(ctx context.Context, email string) (*Use
 	return nil, nil
 }
 
+func (m *MockRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
+	if m.GetUserByIDFunc != nil {
+		return m.GetUserByIDFunc(ctx, id)
+	}
+	return nil, nil
+}
+
 func TestService_Register(t *testing.T) {
 	ctx := context.Background()
 
@@ -41,6 +49,12 @@ func TestService_Register(t *testing.T) {
 			},
 			// Simula que a criação do usuário foi bem-sucedida
 			CreateUserFunc: func(ctx context.Context, user *User) error {
+				if user.ID == uuid.Nil {
+					t.Error("ID do usuário não foi gerado")
+				}
+				if user.Password == "senha123" {
+					t.Error("senha não foi hasheada")
+				}
 				return nil
 			},
 		}
@@ -102,9 +116,11 @@ func TestService_Login(t *testing.T) {
 	// Usuário mockado com senha "senha123" hasheada
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("senha123"), bcrypt.DefaultCost)
 	mockUser := &User{
-		ID:       uuid.New(),
-		Email:    "usuario@exemplo.com",
-		Password: string(hashedPassword),
+		ID:        uuid.New(),
+		FirstName: "Teste",
+		LastName:  "Usuario",
+		Email:     "usuario@exemplo.com",
+		Password:  string(hashedPassword),
 	}
 
 	t.Run("deve logar com sucesso e retornar jwt", func(t *testing.T) {
@@ -128,7 +144,7 @@ func TestService_Login(t *testing.T) {
 			t.Fatal("esperava um token de acesso, mas obteve nulo ou vazio")
 		}
 
-		// Validar o token (opcional, mas bom)
+		// Validar o token
 		token, err := jwt.Parse(resp.AccessToken, func(token *jwt.Token) (interface{}, error) {
 			return []byte(jwtSecret), nil
 		})
@@ -139,7 +155,10 @@ func TestService_Login(t *testing.T) {
 			t.Error("o token gerado não é válido")
 		}
 
-		claims, _ := token.Claims.(jwt.MapClaims)
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			t.Error("não foi possível obter as claims do token")
+		}
 		if claims["sub"] != mockUser.ID.String() {
 			t.Error("a claim 'sub' do token está incorreta")
 		}

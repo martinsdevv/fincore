@@ -18,7 +18,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5" // <-- 1. ADICIONE O '_' AQUI
+	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
@@ -77,7 +77,18 @@ func main() {
 	authRepo := auth.NewRepository(database.DB)
 	authSvc := auth.NewService(authRepo, cfg.JWTSecret)
 	authHandler := auth.NewHandler(authSvc, cfg.JWTSecret)
+
+	// --- Rotas Públicas ---
 	authHandler.RegisterRoutes(r)
+
+	// --- Rotas Protegidas ---
+	r.Group(func(r chi.Router) {
+		// Aplica o middleware de autenticação a este grupo
+		r.Use(authHandler.AuthMiddleware)
+
+		// Rota de teste /me
+		r.Get("/auth/me", authHandler.GetMe)
+	})
 
 	serverAddr := fmt.Sprintf(":%s", cfg.APIPort)
 	server := &http.Server{Addr: serverAddr, Handler: r}
@@ -107,7 +118,6 @@ func main() {
 }
 
 func runMigrations(cfg *config.Config) error {
-	// 2. MUDE 'postgresql://' PARA 'pgx5://' AQUI
 	dsn := fmt.Sprintf("pgx5://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.DBUser,
 		cfg.DBPassword,

@@ -127,3 +127,26 @@ func (h *Handler) AuthMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
+
+func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(UserContextKey).(string)
+	if !ok {
+		log.Error().Msg("UserID não encontrado no contexto, middleware mal configurado")
+		h.writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+		return
+	}
+
+	userResponse, err := h.service.GetMe(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			h.writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
+			return
+		}
+
+		log.Error().Err(err).Str("userID", userID).Msg("Falha ao buscar perfil do usuário")
+		h.writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to retrieve user profile"})
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, userResponse)
+}

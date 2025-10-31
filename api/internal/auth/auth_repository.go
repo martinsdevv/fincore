@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -11,6 +12,7 @@ import (
 type Repository interface {
 	CreateUser(ctx context.Context, user *User) error
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
+	GetUserByID(ctx context.Context, id uuid.UUID) (*User, error)
 }
 
 type pgxRepository struct {
@@ -56,6 +58,30 @@ func (r *pgxRepository) GetUserByEmail(ctx context.Context, email string) (*User
 			return nil, nil
 		}
 		// Se for qualquer outro erro de banco, nós o retornamos.
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (r *pgxRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) {
+	query := `SELECT id, first_name, last_name, email, password
+			  FROM users
+			  WHERE id = $1`
+
+	var user User
+	err := r.db.QueryRow(ctx, query, id).Scan(
+		&user.ID,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.Password,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
