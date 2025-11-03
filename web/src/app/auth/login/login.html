@@ -1,37 +1,46 @@
-<div class="login-container">
-  <h2>Login - Fincore</h2>
+<div class="auth-container">
+  <mat-card class="auth-card">
+    <img class="auth-logo" src="assets/images/logo-fincore.png" alt="Fincore Logo" />
 
-  <form (ngSubmit)="onSubmit()">
-    <div class="form-group">
-      <label for="email">Email</label>
-      <input 
-        type="email" 
-        id="email" 
-        name="email"
-        [(ngModel)]="credentials.email"
-        required
-      >
+    <div class="auth-header-centered">
+      <mat-card-title>Acesse sua conta</mat-card-title>
+      <mat-card-subtitle>Bem-vindo ao Fincore</mat-card-subtitle>
     </div>
 
-    <div class="form-group">
-      <label for="password">Senha</label>
-      <input 
-        type="password" 
-        id="password" 
-        name="password"
-        [(ngModel)]="credentials.password"
-        required
-      >
-    </div>
+    <mat-card-content>
+      <form (ngSubmit)="onSubmit()">
+        <mat-form-field class="full-width-field" appearance="outline">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" name="email" [(ngModel)]="credentials.email" required />
+        </mat-form-field>
 
-    <div *ngIf="errorMessage" class="error-message">
-      {{ errorMessage }}
-    </div>
+        <mat-form-field class="full-width-field" appearance="outline">
+          <mat-label>Senha</mat-label>
+          <input
+            matInput
+            [type]="hidePassword ? 'password' : 'text'"
+            name="password"
+            [(ngModel)]="credentials.password"
+            required
+          />
 
-    <button type="submit">Entrar</button>
-  </form>
+          <button
+            mat-icon-button
+            matSuffix
+            (click)="hidePassword = !hidePassword"
+            [attr.aria-label]="'Ocultar ou mostrar senha'"
+            type="button"
+          >
+            <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+          </button>
+        </mat-form-field>
+        <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
 
-  <p>
-    Não tem uma conta? <a [routerLink]="['/auth/register']">Registre-se</a>
-  </p>
+        <div class="auth-actions">
+          <a mat-button [routerLink]="['/auth/register']"> Criar conta </a>
+          <button mat-raised-button color="primary" type="submit">Entrar</button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
 </div>

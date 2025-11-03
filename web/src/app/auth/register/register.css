@@ -1,0 +1,56 @@
+/* Centraliza o card na tela */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #512da8;
+  background-image: linear-gradient(135deg, #7e57c2 0%, #4527a0 100%);
+}
+
+.auth-card {
+  max-width: 450px;
+  width: 100%;
+  padding: 32px;
+  text-align: center; /* Centraliza tudo por padrão */
+}
+
+/* Estilo do Logo */
+.auth-logo {
+  display: block;
+  width: 100px;
+  margin: 0 auto 24px auto; /* Centraliza e dá espaço ABAIXO */
+}
+
+/* Cabeçalho */
+.auth-header-centered {
+  margin-bottom: 24px; /* Espaço abaixo do subtítulo */
+}
+
+/* Campos de formulário */
+.full-width-field {
+  width: 100%;
+  text-align: left; /* Reseta alinhamento pro label não ficar no centro */
+}
+
+/* Ações (botões) */
+.auth-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 20px;
+}
+
+/* Mensagens */
+.error-message {
+  color: #f44336;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.success-message {
+  color: #4caf50;
+  margin-bottom: 10px;
+  text-align: center;
+}

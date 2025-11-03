@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../auth';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-login',
@@ -10,22 +15,28 @@ import { AuthService } from '../auth';
   imports: [
     CommonModule,
     FormsModule,
-    RouterModule
+    RouterModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
   ],
   templateUrl: './login.html',
-  styleUrls: ['./login.css']
+  styleUrls: ['./login.css'],
 })
 export class LoginComponent {
   credentials = {
     email: '',
-    password: ''
+    password: '',
   };
   errorMessage = '';
+  hidePassword = true;
 
   constructor(
     private authService: AuthService,
-    private router: Router
-  ) { }
+    private router: Router,
+  ) {}
 
   onSubmit(): void {
     this.errorMessage = '';
@@ -38,7 +49,7 @@ export class LoginComponent {
       error: (err) => {
         this.errorMessage = 'Email ou senha inválidos. Tente novamente.';
         console.error('Falha no login', err);
-      }
+      },
     });
   }
 }
