@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/martinsdevv/fincore/internal/accounts"
 	"github.com/martinsdevv/fincore/internal/auth"
 	"github.com/martinsdevv/fincore/internal/config"
 	"github.com/martinsdevv/fincore/pkg/database"
@@ -78,6 +79,10 @@ func main() {
 	authSvc := auth.NewService(authRepo, cfg.JWTSecret)
 	authHandler := auth.NewHandler(authSvc, cfg.JWTSecret)
 
+	accountsRepo := accounts.NewRepository(database.DB)
+	accountsSvc := accounts.NewService(accountsRepo)
+	accountsHandler := accounts.NewHandler(accountsSvc)
+
 	// --- Rotas Públicas ---
 	authHandler.RegisterRoutes(r)
 
@@ -88,6 +93,9 @@ func main() {
 
 		// Rota de teste /me
 		r.Get("/auth/me", authHandler.GetMe)
+
+		// Rotas do módulo accounts
+		accountsHandler.RegisterRoutes(r)
 	})
 
 	serverAddr := fmt.Sprintf(":%s", cfg.APIPort)
