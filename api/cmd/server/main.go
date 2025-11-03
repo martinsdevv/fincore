@@ -14,6 +14,7 @@ import (
 	"github.com/martinsdevv/fincore/internal/accounts"
 	"github.com/martinsdevv/fincore/internal/auth"
 	"github.com/martinsdevv/fincore/internal/config"
+	"github.com/martinsdevv/fincore/internal/transactions"
 	"github.com/martinsdevv/fincore/pkg/database"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -83,6 +84,10 @@ func main() {
 	accountsSvc := accounts.NewService(accountsRepo)
 	accountsHandler := accounts.NewHandler(accountsSvc)
 
+	transactionsRepo := transactions.NewRepository(database.DB)
+	transactionsSvc := transactions.NewService(database.DB, accountsRepo, transactionsRepo)
+	transactionsHandler := transactions.NewHandler(transactionsSvc)
+
 	// --- Rotas Públicas ---
 	authHandler.RegisterRoutes(r)
 
@@ -96,6 +101,9 @@ func main() {
 
 		// Rotas do módulo accounts
 		accountsHandler.RegisterRoutes(r)
+
+		// Rotas do módulo transactions
+		transactionsHandler.RegisterRoutes(r)
 	})
 
 	serverAddr := fmt.Sprintf(":%s", cfg.APIPort)

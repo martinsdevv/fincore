@@ -13,8 +13,8 @@ type Repository interface {
 	CreateAccount(ctx context.Context, account *Account) error
 	GetAccountByID(ctx context.Context, id uuid.UUID) (*Account, error)
 	ListAccountsByUserID(ctx context.Context, userID uuid.UUID) ([]Account, error)
-	// UpdateAccountBalance (vamos adicionar isso depois com as transações)
-	// DeleteAccount (podemos adicionar depois)
+	GetAccountByIDForUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID) (*Account, error)
+	UpdateAccountBalanceInTx(ctx context.Context, tx pgx.Tx, id uuid.UUID, newBalance int64) error
 }
 
 type pgxRepository struct {
@@ -103,4 +103,50 @@ func (r *pgxRepository) ListAccountsByUserID(ctx context.Context, userID uuid.UU
 	}
 
 	return accounts, nil
+}
+
+func (r *pgxRepository) GetAccountByIDForUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID) (*Account, error) {
+	query := `
+		SELECT id, user_id, name, type, balance, currency, created_at, updated_at
+		FROM accounts
+		WHERE id = $1
+		FOR UPDATE`
+
+	var acc Account
+	err := tx.QueryRow(ctx, query, id).Scan(
+		&acc.ID,
+		&acc.UserID,
+		&acc.Name,
+		&acc.Type,
+		&acc.Balance,
+		&acc.Currency,
+		&acc.CreatedAt,
+		&acc.UpdatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &acc, nil
+}
+
+func (r *pgxRepository) UpdateAccountBalanceInTx(ctx context.Context, tx pgx.Tx, id uuid.UUID, newBalance int64) error {
+	query := `
+		UPDATE accounts
+		SET balance = $1, updated_at = NOW()
+		WHERE id = $2`
+
+	tag, err := tx.Exec(ctx, query, newBalance, id)
+	if err != nil {
+		return err
+	}
+
+	if tag.RowsAffected() == 0 {
+		return errors.New("account not found or not updated")
+	}
+
+	return nil
 }
