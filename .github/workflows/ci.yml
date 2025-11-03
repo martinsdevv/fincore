@@ -1,19 +1,16 @@
 name: Go CI/CD para Fincore API
 
 on:
-  push:
-    branches:
-      - main
-  
+  push: # <-- MUDANÇA: Gatilho em push para QUALQUER branch
+    paths:
+      - "api/**"
   pull_request:
     branches:
       - main
-    
     paths:
-      - 'api/**'
+      - "api/**"
 
 jobs:
-
   build-and-test:
     name: Build & Teste
     runs-on: ubuntu-latest
@@ -43,16 +40,15 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
-      
+          go-version: "1.24"
+
       - name: Set Working Directory
         run: echo "WORK_DIR=./api" >> $GITHUB_ENV
 
@@ -94,74 +90,46 @@ jobs:
         run: go test -v -race ./...
         working-directory: ${{ env.WORK_DIR }}
 
-  
-  
   build-and-push-docker:
     name: Build & Push
     runs-on: ubuntu-latest
-    
-    
+
+    # <-- FIX 1: Adiciona as permissões necessárias para o GITHUB_TOKEN
+    permissions:
+      contents: read
+      packages: write # Permissão para fazer push de imagens no GHCR
+
     needs: build-and-test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'    
-    services:
-      # Nome do serviço (pode ser qualquer um)
-      postgres:
-        image: postgres:16-alpine
-        # Variáveis de ambiente para o container do Postgres
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }} # Usa o segredo
-          POSTGRES_DB: fincore_test # Usamos um DB de teste
-        ports:
-          - 5432:5432 # Mapeia a porta
-        # Opções para checagem de saúde (garante que o DB está pronto)
-        options: >-
-          --health-cmd "pg_isready"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' # Só roda em push na main
 
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-
+    # <-- FIX 3: Serviços removidos, não são necessários para buildar a imagem
 
     steps:
-      
       - name: Checkout code
         uses: actions/checkout@v4
 
-      
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }} 
-      
+          password: ${{ secrets.GITHUB_TOKEN }} # O GITHUB_TOKEN usará a permissão 'packages: write'
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./api 
-          file: ./api/Dockerfile 
-          push: true 
+          context: ./api
+          file: ./api/Dockerfile
+          push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/fincore-api:latest
             ghcr.io/${{ github.repository_owner }}/fincore-api:${{ github.sha }}
-          
+
           cache-from: type=gha
           cache-to: type=gha,mode=max
