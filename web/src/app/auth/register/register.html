@@ -1,63 +1,65 @@
-<div class="register-container">
-  <h2>Criar Conta - Fincore</h2>
+<div class="auth-container">
+  <mat-card class="auth-card">
+    <img class="auth-logo" src="assets/images/logo-fincore.png" alt="Fincore Logo" />
 
-  <form (ngSubmit)="onSubmit()">
-    <div class="form-group">
-        <label for="first_name">Nome</label>
-        <input 
-            type="text" 
-            id="first_name" 
+    <div class="auth-header-centered">
+      <mat-card-title>Crie sua conta</mat-card-title>
+      <mat-card-subtitle>Rápido e fácil</mat-card-subtitle>
+    </div>
+
+    <mat-card-content>
+      <form (ngSubmit)="onSubmit()">
+        <mat-form-field class="full-width-field" appearance="outline">
+          <mat-label>Nome</mat-label>
+          <input
+            matInput
+            type="text"
             name="first_name"
             [(ngModel)]="userData.first_name"
             required
-        >
-    </div>
+          />
+        </mat-form-field>
 
-    <div class="form-group">
-        <label for="last_name">Sobrenome</label>
-        <input 
-            type="text" 
-            id="last_name" 
-            name="last_name"
-            [(ngModel)]="userData.last_name"
+        <mat-form-field class="full-width-field" appearance="outline">
+          <mat-label>Sobrenome</mat-label>
+          <input matInput type="text" name="last_name" [(ngModel)]="userData.last_name" required />
+        </mat-form-field>
+
+        <mat-form-field class="full-width-field" appearance="outline">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" name="email" [(ngModel)]="userData.email" required />
+        </mat-form-field>
+
+        <mat-form-field class="full-width-field" appearance="outline">
+          <mat-label>Senha</mat-label>
+          <input
+            matInput
+            [type]="hidePassword ? 'password' : 'text'"
+            name="password"
+            [(ngModel)]="userData.password"
             required
-        >
-    </div>
+            minlength="6"
+          />
 
-    <div class="form-group">
-      <label for="email">Email</label>
-      <input 
-        type="email" 
-        id="email" 
-        name="email"
-        [(ngModel)]="userData.email"
-        required
-      >
-    </div>
+          <button
+            mat-icon-button
+            matSuffix
+            (click)="hidePassword = !hidePassword"
+            [attr.aria-label]="'Ocultar ou mostrar senha'"
+            type="button"
+          >
+            <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+          </button>
+        </mat-form-field>
 
-    <div class="form-group">
-      <label for="password">Senha</label>
-      <input 
-        type="password" 
-        id="password" 
-        name="password"
-        [(ngModel)]="userData.password"
-        required
-        minlength="6"
-      >
-    </div>
+        <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+        <div *ngIf="successMessage" class="success-message">{{ successMessage }}</div>
 
-    <div *ngIf="errorMessage" class="error-message">
-      {{ errorMessage }}
-    </div>
-    <div *ngIf="successMessage" class="success-message">
-      {{ successMessage }}
-    </div>
-
-    <button type="submit">Criar Conta</button>
-  </form>
-
-  <p>
-    Já tem uma conta? <a [routerLink]="['/auth/login']">Faça o login</a>
-  </p>
+        <div class="auth-actions">
+          <a mat-button [routerLink]="['/auth/login']"> Já tem uma conta? </a>
+          <button mat-raised-button color="primary" type="submit">Criar Conta</button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
 </div>

@@ -1,0 +1,76 @@
+/* Centraliza o card na tela */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #512da8;
+  background-image: linear-gradient(135deg, #7e57c2 0%, #4527a0 100%);
+}
+
+.auth-card {
+  max-width: 450px;
+  width: 100%;
+  padding: 32px;
+
+  /* (MUDANÇA CHAVE 1)
+    Força tudo dentro do card a centralizar o texto por padrão.
+  */
+  text-align: center;
+}
+
+/* (NOVO) Estilo do Logo */
+.auth-logo {
+  display: block;
+  width: 100px; /* Aumentei um pouco, parece melhor pro seu logo */
+  margin: 0 auto 24px auto; /* Centraliza e dá 24px de espaço ABAIXO */
+}
+
+/* (NOVO) Cabeçalho */
+.auth-header-centered {
+  /* O 'text-align: center' do .auth-card já vai centralizar isso.
+    Só precisamos de espaço abaixo.
+  */
+  margin-bottom: 24px;
+}
+
+/* (REMOVA ISSO)
+  Não precisamos mais do hack do ::ng-deep.
+*/
+/* ::ng-deep .auth-header-centered .mat-card-header-text {
+  margin: 0 auto;
+}
+*/
+
+/* Garante que os campos de formulário ocupem 100% da largura do card */
+.full-width-field {
+  width: 100%;
+
+  /* (MUDANÇA CHAVE 2)
+    Reseta o alinhamento para os campos de formulário,
+    porque o label centralizado fica esquisito.
+  */
+  text-align: left;
+}
+
+/* Adiciona espaço acima dos botões */
+.auth-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 20px; /* Espaço entre o campo "Senha" e os botões */
+}
+
+/* Mensagens de erro/sucesso */
+.error-message {
+  color: #f44336;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.success-message {
+  color: #4caf50;
+  margin-bottom: 10px;
+  text-align: center;
+}

@@ -1,0 +1,35 @@
+/* Isso empurra o botão "Sair" para a direita na toolbar */
+.toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+/* Cria o "respiro" da página, para o card
+  não ficar colado na toolbar
+*/
+.dashboard-container {
+  padding: 24px;
+  max-width: 900px; /* Define uma largura máxima para o conteúdo */
+  margin: 0 auto; /* Centraliza o contêiner */
+}
+
+/* Centraliza o spinner de loading
+*/
+.spinner-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - 200px); /* Ocupa a altura, menos a toolbar e padding */
+}
+
+/* Mensagem de erro */
+.error-message {
+  color: #f44336;
+  margin-top: 16px;
+  text-align: center;
+}
+
+/* Linha da lista (para não ficar tudo espremido) */
+span[matListItemLine] {
+  color: #616161; /* Um cinza escuro para o dado */
+}

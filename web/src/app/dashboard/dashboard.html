@@ -1,12 +1,48 @@
+<mat-toolbar color="primary">
+  <mat-icon>savings</mat-icon>
+  <span>Fincore</span>
+
+  <span class="toolbar-spacer"></span>
+
+  <button mat-button (click)="logout()">
+    <mat-icon>logout</mat-icon>
+    Sair
+  </button>
+</mat-toolbar>
+
 <div class="dashboard-container">
   <div *ngIf="user; else loading">
-    <h2>Bem-vindo, {{ user.name }}!</h2>
-    <p>Email: {{ user.email }}</p>
-    <pre>{{ user | json }}</pre> <button (click)="logout()">Sair</button>
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Bem-vindo, {{ user.first_name }}!</mat-card-title>
+        <mat-card-subtitle>Seu painel de controle Fincore</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <p>Estes são os seus dados de perfil cadastrados:</p>
+
+        <mat-list role="list">
+          <mat-list-item role="listitem">
+            <mat-icon matListItemIcon>person</mat-icon>
+            <span matListItemTitle>Nome Completo</span>
+            <span matListItemLine>{{ user.first_name }} {{ user.last_name }}</span>
+          </mat-list-item>
+
+          <mat-list-item role="listitem">
+            <mat-icon matListItemIcon>email</mat-icon>
+            <span matListItemTitle>Email</span>
+            <span matListItemLine>{{ user.email }}</span>
+          </mat-list-item>
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
   </div>
 
   <ng-template #loading>
-    <p *ngIf="!errorMessage">Carregando dados do perfil...</p>
-    <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <div class="spinner-container">
+      <mat-spinner></mat-spinner>
+      <p *ngIf="!errorMessage">Carregando dados do perfil...</p>
+      <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
+    </div>
   </ng-template>
 </div>
