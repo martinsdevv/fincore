@@ -68,7 +68,6 @@ func (s *service) CreateTransaction(ctx context.Context, req CreateTransactionRe
 		return nil, errors.New("invalid account ID")
 	}
 
-	// --- MUDANÇA AQUI ---
 	categoryID, err := uuid.Parse(req.CategoryID)
 	if err != nil {
 		return nil, errors.New("invalid category ID")
@@ -81,20 +80,25 @@ func (s *service) CreateTransaction(ctx context.Context, req CreateTransactionRe
 
 	transactionType := TransactionType(req.Type)
 
-	// --- MUDANÇA AQUI ---
 	newTransaction := &Transaction{
 		ID:              uuid.New(),
 		AccountID:       accountID,
 		Type:            transactionType,
 		Amount:          req.Amount,
 		Description:     req.Description,
-		CategoryID:      &categoryID, // <-- MUDOU AQUI
+		CategoryID:      &categoryID,
 		TransactionDate: transactionDate,
 		CreatedAt:       time.Now().UTC(),
 	}
 
+	// --- MUDANÇA AQUI ---
+	// Declaramos a categoria aqui fora para podermos acessar o nome dela
+	// depois que a transação (txFunc) for executada.
+	var category *categories.Category
+	// --- FIM DA MUDANÇA ---
+
 	txFunc := func(tx pgx.Tx) error {
-		// 1. Validar a Conta (igual a antes)
+		// 1. Validar a Conta
 		account, err := s.accountsRepo.GetAccountByIDForUpdate(ctx, tx, accountID)
 		if err != nil {
 			log.Error().Err(err).Msg("Falha ao obter conta no GetAccountByIDForUpdate")
@@ -104,12 +108,14 @@ func (s *service) CreateTransaction(ctx context.Context, req CreateTransactionRe
 			return ErrAccountNotFound
 		}
 		if account.UserID != userID {
-			return ErrForbidden // Usuário tentando usar conta de outro
+			return ErrForbidden
 		}
 
-		// --- LÓGICA NOVA: Validar a Categoria ---
-		// (Não usamos "ForUpdate" aqui, só precisamos ler)
-		category, err := s.categoriesRepo.GetCategoryByID(ctx, categoryID)
+		// 2. Validar a Categoria
+		// --- MUDANÇA AQUI ---
+		// Removemos o 'var' para atribuir à variável externa
+		category, err = s.categoriesRepo.GetCategoryByID(ctx, categoryID)
+		// --- FIM DA MUDANÇA ---
 		if err != nil {
 			log.Error().Err(err).Msg("Falha ao obter categoria no GetCategoryByID")
 			return ErrTransactionFailed
@@ -119,11 +125,10 @@ func (s *service) CreateTransaction(ctx context.Context, req CreateTransactionRe
 		}
 		if category.UserID != userID {
 			log.Warn().Str("userID", userID.String()).Str("categoryOwnerID", category.UserID.String()).Msg("Forbidden category usage attempt")
-			return ErrForbidden // Usuário tentando usar categoria de outro
+			return ErrForbidden
 		}
-		// --- FIM DA LÓGICA NOVA ---
 
-		// 3. Validar Saldo (igual a antes)
+		// 3. Validar Saldo
 		var newBalance int64
 		if transactionType == TypeIncome {
 			newBalance = account.Balance + req.Amount
@@ -134,13 +139,13 @@ func (s *service) CreateTransaction(ctx context.Context, req CreateTransactionRe
 			newBalance = account.Balance - req.Amount
 		}
 
-		// 4. Criar Transação (igual a antes, mas repo já está atualizado)
+		// 4. Criar Transação
 		if err := s.transactionsRepo.CreateTransactionInTx(ctx, tx, newTransaction); err != nil {
 			log.Error().Err(err).Msg("Falha ao criar transação no CreateTransactionInTx")
 			return ErrTransactionFailed
 		}
 
-		// 5. Atualizar Saldo (igual a antes)
+		// 5. Atualizar Saldo
 		if err := s.accountsRepo.UpdateAccountBalanceInTx(ctx, tx, accountID, newBalance); err != nil {
 			log.Error().Err(err).Msg("Falha ao atualizar saldo no UpdateAccountBalanceInTx")
 			return ErrTransactionFailed
@@ -150,11 +155,31 @@ func (s *service) CreateTransaction(ctx context.Context, req CreateTransactionRe
 	}
 
 	if err := s.executeTx(ctx, txFunc); err != nil {
-		// O handler.go vai mapear esses erros para 403, 404, 422...
 		return nil, err
 	}
 
-	return toTransactionResponse(newTransaction), nil
+	// --- MUDANÇA AQUI ---
+	// Não podemos mais usar 'toTransactionResponse(newTransaction)'
+	// porque 'newTransaction' é do tipo *Transaction, e o helper espera *ListTransactionsRow.
+	// Em vez disso, construímos a resposta manualmente,
+	// já que temos 'newTransaction' e a 'category' que buscamos.
+	var categoryName *string
+	if category != nil {
+		categoryName = &category.Name
+	}
+
+	return &TransactionResponse{
+		ID:              newTransaction.ID,
+		AccountID:       newTransaction.AccountID,
+		Type:            newTransaction.Type,
+		Amount:          newTransaction.Amount,
+		Description:     newTransaction.Description,
+		CategoryID:      newTransaction.CategoryID,
+		CategoryName:    categoryName, // <-- Retornamos o nome
+		TransactionDate: newTransaction.TransactionDate,
+		CreatedAt:       newTransaction.CreatedAt,
+	}, nil
+	// --- FIM DA MUDANÇA ---
 }
 
 func (s *service) ListTransactionsByAccount(ctx context.Context, accountIDStr string, userIDStr string) ([]TransactionResponse, error) {
@@ -168,8 +193,7 @@ func (s *service) ListTransactionsByAccount(ctx context.Context, accountIDStr st
 		return nil, errors.New("invalid account ID")
 	}
 
-	// Nenhuma mudança de lógica aqui.
-	// A checagem de segurança é a mesma.
+	// Checagem de segurança (continua igual)
 	account, err := s.accountsRepo.GetAccountByID(ctx, accountID)
 	if err != nil {
 		log.Error().Err(err).Str("accountID", accountIDStr).Msg("Falha ao checar dono da conta")
@@ -183,32 +207,40 @@ func (s *service) ListTransactionsByAccount(ctx context.Context, accountIDStr st
 		return nil, ErrForbidden
 	}
 
-	// O repo já foi atualizado, então essa chamada funciona.
+	// --- MUDANÇA AQUI ---
+	// O repo agora retorna 'ListTransactionsRow'
 	transactions, err := s.transactionsRepo.ListTransactionsByAccountID(ctx, accountID)
 	if err != nil {
 		log.Error().Err(err).Str("accountID", accountIDStr).Msg("Falha ao listar transações do repositório")
 		return nil, err
 	}
 
+	// Mapeia de 'ListTransactionsRow' para 'TransactionResponse'
 	responses := make([]TransactionResponse, len(transactions))
 	for i, tr := range transactions {
-		// toTransactionResponse foi atualizado
-		responses[i] = *toTransactionResponse(&tr)
+		responses[i] = *toTransactionResponse(&tr) // <-- Usa o helper atualizado
 	}
 
 	return responses, nil
 }
 
 // Helper de conversão
-func toTransactionResponse(tr *Transaction) *TransactionResponse {
-	return &TransactionResponse{
+func toTransactionResponse(tr *ListTransactionsRow) *TransactionResponse {
+	resp := &TransactionResponse{
 		ID:              tr.ID,
 		AccountID:       tr.AccountID,
 		Type:            tr.Type,
 		Amount:          tr.Amount,
 		Description:     tr.Description,
-		CategoryID:      tr.CategoryID, // <-- MUDOU AQUI
+		CategoryID:      tr.CategoryID,
 		TransactionDate: tr.TransactionDate,
 		CreatedAt:       tr.CreatedAt,
 	}
+
+	// Converte sql.NullString (do DB) para *string (do JSON)
+	if tr.CategoryName.Valid {
+		resp.CategoryName = &tr.CategoryName.String
+	}
+
+	return resp
 }

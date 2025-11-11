@@ -1,6 +1,7 @@
 package transactions
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -43,6 +44,19 @@ type TransactionResponse struct {
 	Amount          int64           `json:"amount"`
 	Description     string          `json:"description"`
 	CategoryID      *uuid.UUID      `json:"category_id,omitempty"`
+	CategoryName    *string         `json:"category_name,omitempty"` // <-- CAMPO ADICIONADO
 	TransactionDate time.Time       `json:"transaction_date"`
 	CreatedAt       time.Time       `json:"created_at"`
+}
+
+type ListTransactionsRow struct {
+	ID              uuid.UUID       `json:"id"`
+	AccountID       uuid.UUID       `json:"account_id"`
+	Type            TransactionType `json:"type"`
+	Amount          int64           `json:"amount"`
+	Description     string          `json:"description"`
+	CategoryID      *uuid.UUID      `json:"category_id,omitempty"`
+	TransactionDate time.Time       `json:"transaction_date"`
+	CreatedAt       time.Time       `json:"created_at"`
+	CategoryName    sql.NullString  `json:"category_name"`
 }
