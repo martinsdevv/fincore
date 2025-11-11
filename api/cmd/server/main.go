@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/martinsdevv/fincore/internal/accounts"
 	"github.com/martinsdevv/fincore/internal/auth"
+	"github.com/martinsdevv/fincore/internal/categories"
 	"github.com/martinsdevv/fincore/internal/config"
 	"github.com/martinsdevv/fincore/internal/transactions"
 	"github.com/martinsdevv/fincore/pkg/database"
@@ -84,9 +85,12 @@ func main() {
 	accountsSvc := accounts.NewService(accountsRepo)
 	accountsHandler := accounts.NewHandler(accountsSvc)
 
+	categoriesRepo := categories.NewRepository(database.DB)
 	transactionsRepo := transactions.NewRepository(database.DB)
-	transactionsSvc := transactions.NewService(database.DB, accountsRepo, transactionsRepo)
+	transactionsSvc := transactions.NewService(database.DB, accountsRepo, transactionsRepo, categoriesRepo)
 	transactionsHandler := transactions.NewHandler(transactionsSvc)
+	categoriesSvc := categories.NewService(categoriesRepo)
+	categoriesHandler := categories.NewHandler(categoriesSvc)
 
 	// --- Rotas Públicas ---
 	authHandler.RegisterRoutes(r)
@@ -104,6 +108,9 @@ func main() {
 
 		// Rotas do módulo transactions
 		transactionsHandler.RegisterRoutes(r)
+
+		// Rotas do módulo categories
+		categoriesHandler.RegisterRoutes(r)
 	})
 
 	serverAddr := fmt.Sprintf(":%s", cfg.APIPort)

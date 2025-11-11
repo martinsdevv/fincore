@@ -10,7 +10,6 @@ import (
 
 type Repository interface {
 	CreateTransactionInTx(ctx context.Context, tx pgx.Tx, tr *Transaction) error
-
 	ListTransactionsByAccountID(ctx context.Context, accountID uuid.UUID) ([]Transaction, error)
 }
 
@@ -23,8 +22,9 @@ func NewRepository(db *pgxpool.Pool) Repository {
 }
 
 func (r *pgxRepository) CreateTransactionInTx(ctx context.Context, tx pgx.Tx, tr *Transaction) error {
+	// --- MUDANÇA NA QUERY ---
 	query := `
-		INSERT INTO transactions (id, account_id, type, amount, description, category, transaction_date, created_at)
+		INSERT INTO transactions (id, account_id, type, amount, description, category_id, transaction_date, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
 	_, err := tx.Exec(ctx, query,
@@ -33,7 +33,7 @@ func (r *pgxRepository) CreateTransactionInTx(ctx context.Context, tx pgx.Tx, tr
 		tr.Type,
 		tr.Amount,
 		tr.Description,
-		tr.Category,
+		tr.CategoryID, // <-- MUDOU AQUI
 		tr.TransactionDate,
 		tr.CreatedAt,
 	)
@@ -41,8 +41,9 @@ func (r *pgxRepository) CreateTransactionInTx(ctx context.Context, tx pgx.Tx, tr
 }
 
 func (r *pgxRepository) ListTransactionsByAccountID(ctx context.Context, accountID uuid.UUID) ([]Transaction, error) {
+	// --- MUDANÇA NA QUERY ---
 	query := `
-		SELECT id, account_id, type, amount, description, category, transaction_date, created_at
+		SELECT id, account_id, type, amount, description, category_id, transaction_date, created_at
 		FROM transactions
 		WHERE account_id = $1
 		ORDER BY transaction_date DESC, created_at DESC`
@@ -56,13 +57,14 @@ func (r *pgxRepository) ListTransactionsByAccountID(ctx context.Context, account
 	var transactions []Transaction
 	for rows.Next() {
 		var tr Transaction
+		// --- MUDANÇA NO SCAN ---
 		err := rows.Scan(
 			&tr.ID,
 			&tr.AccountID,
 			&tr.Type,
 			&tr.Amount,
 			&tr.Description,
-			&tr.Category,
+			&tr.CategoryID, // <-- MUDOU AQUI
 			&tr.TransactionDate,
 			&tr.CreatedAt,
 		)
